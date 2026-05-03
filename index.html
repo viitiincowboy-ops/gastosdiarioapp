@@ -156,6 +156,36 @@ function PieChart({data, title, totalLabel}){
   );
 }
 
+function MesCard({mes,labelMes}){
+  const [open,setOpen] = useState(false);
+  const catM = useMemo(()=>{
+    const m={};mes.txs.forEach(t=>{m[t.categoria]=(m[t.categoria]||0)+t.valor;});
+    return Object.entries(m).sort((a,b)=>b[1]-a[1]);
+  },[mes]);
+  return (
+    <div style={{background:'#141420',border:'1px solid #222235',borderRadius:'14px',overflow:'hidden'}}>
+      <button onClick={()=>setOpen(o=>!o)} style={{width:'100%',background:'none',border:'none',padding:'14px 16px',display:'flex',alignItems:'center',gap:'10px',cursor:'pointer',color:'#F0EDE8',fontFamily:'inherit'}}>
+        <span style={{fontSize:'16px'}}>🗓️</span>
+        <span style={{flex:1,textAlign:'left',fontWeight:600,fontSize:'14px',textTransform:'capitalize'}}>{labelMes(mes.key)}</span>
+        <span style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:'15px',color:'#FF6B6B'}}>{mes.total.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</span>
+        <span style={{color:'#555',fontSize:'12px',marginLeft:'6px'}}>{open?'▲':'▼'}</span>
+      </button>
+      {open&&(
+        <div style={{padding:'0 16px 14px',borderTop:'1px solid #1E1E2E'}}>
+          <div style={{color:'#555',fontSize:'11px',marginBottom:'8px',marginTop:'10px'}}>{mes.txs.length} lançamentos</div>
+          {catM.map(([cat,val])=>(
+            <div key={cat} style={{display:'flex',alignItems:'center',gap:'8px',padding:'6px 0',borderBottom:'1px solid #1A1A26'}}>
+              <span style={{fontSize:'14px'}}>{(CATEGORIAS.find(c=>c.value===cat)||{label:'🎁 x'}).label.split(' ')[0]}</span>
+              <span style={{flex:1,fontSize:'13px',color:'#B0ADCD'}}>{cat}</span>
+              <span style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:'13px',color:CAT_COLOR[cat]||'#7B61FF'}}>{val.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function App(){
   const [txs,setTxs]           = useState(()=>lsGet('gastos_v1',[]));
   // cartões extras além dos fixos: [{key, nome, emoji, accent}]
@@ -230,6 +260,22 @@ function App(){
 
   const total = useMemo(()=>txs.reduce((s,t)=>s+t.valor,0),[txs]);
 
+  const mesAtual = useMemo(()=>{const n=new Date();return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');},[]);
+  const txsMes = useMemo(()=>txs.filter(t=>{const d=new Date(t.date);const m=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');return m===mesAtual;}),[txs,mesAtual]);
+  const txsArq = useMemo(()=>txs.filter(t=>{const d=new Date(t.date);const m=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');return m!==mesAtual;}),[txs,mesAtual]);
+  const mesesAnteriores = useMemo(()=>{
+    const m={};
+    txsArq.forEach(t=>{
+      const d=new Date(t.date);
+      const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+      if(!m[key])m[key]={key,txs:[],total:0};
+      m[key].txs.push(t);m[key].total+=t.valor;
+    });
+    return Object.values(m).sort((a,b)=>b.key.localeCompare(a.key));
+  },[txsArq]);
+  const totalMes = useMemo(()=>txsMes.reduce((s,t)=>s+t.valor,0),[txsMes]);
+  const labelMes = key=>{const [y,m]=key.split('-');return new Date(y,m-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});};
+
   // Todos os cartões disponíveis: fixos + extras, ordenados por uso
   const allCards = useMemo(()=>{
     const all=[...BANCOS_FIXOS,...extCards];
@@ -237,13 +283,13 @@ function App(){
   },[extCards,usageCount]);
 
   const catData = useMemo(()=>{
-    const m={};txs.forEach(t=>{m[t.categoria]=(m[t.categoria]||0)+t.valor;});
+    const m={};txsMes.forEach(t=>{m[t.categoria]=(m[t.categoria]||0)+t.valor;});
     return Object.entries(m).map(([name,value])=>({name,value,color:CAT_COLOR[name]||'#7B61FF'}));
-  },[txs]);
+  },[txsMes]);
 
   const payData = useMemo(()=>{
     const m={};
-    txs.forEach(t=>{
+    txsMes.forEach(t=>{
       let k;
       if(!t.cartao) k=t.pagamento;
       else k=(t.tipo||t.pagamento)+' · '+t.cartao;
@@ -256,7 +302,7 @@ function App(){
       const color=name.indexOf('·')===-1?(PAY_COLORS[base]||'#BB8FCE'):CARD_COLORS[((idx[name]===undefined?(idx[name]=ci++):idx[name]))%CARD_COLORS.length];
       return{name,value,color,emoji};
     });
-  },[txs]);
+  },[txsMes]);
 
   // ── Adicionar banco "Outros" ──
   const handleOutrosConfirm = ()=>{
@@ -550,17 +596,30 @@ function App(){
           <div className="animate-in">
             <div style={{marginBottom:'16px',marginTop:'8px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
               <span style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:'18px'}}>Resumo</span>
-              <span style={{background:'#1A1A26',border:'1px solid #2A2A3D',borderRadius:'10px',padding:'6px 12px',fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:'15px',color:'#FF6B6B'}}>{fBRL(total)}</span>
+              <span style={{background:'#1A1A26',border:'1px solid #2A2A3D',borderRadius:'10px',padding:'6px 12px',fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:'15px',color:'#FF6B6B'}}>{fBRL(totalMes)}</span>
+            </div>
+            <div style={{color:'#888',fontSize:'11px',fontWeight:600,letterSpacing:'1px',textTransform:'uppercase',marginBottom:'10px'}}>
+              📅 {new Date().toLocaleDateString('pt-BR',{month:'long',year:'numeric'})}
             </div>
             {catData.length===0?(
-              <div style={{textAlign:'center',color:'#555',padding:'60px 20px'}}>
+              <div style={{textAlign:'center',color:'#555',padding:'40px 20px'}}>
                 <div style={{fontSize:'40px',marginBottom:'12px'}}>📊</div>
-                <div>Sem dados para exibir</div>
+                <div>Sem gastos neste mês</div>
               </div>
             ):(
               <div>
                 <PieChart data={catData} title="Por Categoria"/>
-                <PieChart data={payData} title="Por Forma de Pagamento" totalLabel={fBRL(total)}/>
+                <PieChart data={payData} title="Por Forma de Pagamento" totalLabel={fBRL(totalMes)}/>
+              </div>
+            )}
+            {mesesAnteriores.length>0&&(
+              <div style={{marginTop:'24px'}}>
+                <div style={{color:'#555',fontSize:'11px',fontWeight:600,letterSpacing:'1px',textTransform:'uppercase',marginBottom:'10px'}}>Meses anteriores</div>
+                <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
+                  {mesesAnteriores.map(mes=>(
+                    <MesCard key={mes.key} mes={mes} labelMes={labelMes}/>
+                  ))}
+                </div>
               </div>
             )}
           </div>
