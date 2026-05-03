@@ -337,8 +337,9 @@ function App(){
             <div style={{color:'#666',fontSize:'13px',marginTop:'2px'}}>{new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'})}</div>
           </div>
           <div style={{background:'#1A1A26',border:'1px solid #2A2A3D',borderRadius:'12px',padding:'10px 16px',textAlign:'right'}}>
-            <div style={{color:'#888',fontSize:'11px',fontWeight:600,textTransform:'uppercase'}}>Total</div>
-            <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:'18px',fontWeight:700,color:'#FF6B6B'}}>{fBRL(total)}</div>
+            <div style={{color:'#888',fontSize:'11px',fontWeight:600,textTransform:'uppercase'}}>Este mês</div>
+            <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:'18px',fontWeight:700,color:'#FF6B6B'}}>{fBRL(totalMes)}</div>
+            <div style={{color:'#555',fontSize:'11px',marginTop:'2px'}}>total: {fBRL(total)}</div>
           </div>
         </div>
       </div>
