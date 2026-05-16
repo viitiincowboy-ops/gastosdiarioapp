@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0E0E14" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Gastos" />
+  <title>💸 Gastos</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet" />
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%;background:#0E0E14;font-family:'DM Sans',sans-serif;color:#F0EDE8}
+    body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
+    ::-webkit-scrollbar{width:4px}
+    ::-webkit-scrollbar-track{background:#1A1A26}
+    ::-webkit-scrollbar-thumb{background:#333352;border-radius:2px}
+    .btn-chip{border:1.5px solid #333352;background:#1A1A26;color:#F0EDE8;border-radius:14px;padding:14px 20px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;text-align:left;width:100%;display:flex;align-items:center;gap:10px;transition:all .18s}
+    .btn-chip:active{transform:scale(.98)}
+    .btn-cat{border:1.5px solid #2A2A3D;background:#1A1A26;color:#F0EDE8;border-radius:12px;padding:12px 10px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .15s}
+    .btn-cat:active{transform:scale(.97)}
+    .nav-btn{background:none;border:none;color:#888;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;padding:8px 16px;border-radius:10px;display:flex;flex-direction:column;align-items:center;gap:3px;transition:all .15s}
+    .nav-btn.active{color:#7B61FF;background:#1F1F32}
+    .input-field{width:100%;background:#1A1A26;border:1.5px solid #2A2A3D;border-radius:14px;padding:16px 18px;color:#F0EDE8;font-family:'DM Sans',sans-serif;font-size:18px;outline:none;transition:border-color .2s;-webkit-appearance:none}
+    .input-field:focus{border-color:#7B61FF}
+    .input-field::placeholder{color:#555}
+    .pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;letter-spacing:.5px}
+    .tx-card{background:#1A1A26;border:1px solid #2A2A3D;border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px}
+    .delete-btn{background:none;border:none;color:#555;cursor:pointer;font-size:18px;padding:4px 8px;border-radius:6px;line-height:1;font-family:'DM Sans',sans-serif}
+    .submit-btn{width:100%;background:linear-gradient(135deg,#7B61FF,#5B41DF);border:none;border-radius:14px;padding:16px;color:white;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:600;cursor:pointer}
+    .submit-btn:disabled{opacity:.4}
+    .quick-tag{background:#1A1A26;border:1px solid #2A2A3D;color:#B0ADCD;border-radius:20px;padding:7px 14px;cursor:pointer;font-size:13px;font-family:inherit;transition:all 0.15s}
+    .quick-val{background:#1A1A26;border:1px solid #2A2A3D;color:#B0ADCD;border-radius:20px;padding:7px 16px;cursor:pointer;font-size:14px;font-family:'Space Grotesk',sans-serif;font-weight:600;transition:all 0.15s}
+    .tipo-btn{flex:1;border:1.5px solid #2A2A3D;background:#1A1A26;color:#F0EDE8;border-radius:12px;padding:14px 10px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .15s}
+    .tipo-btn:active{transform:scale(.97)}
+    @keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+    .animate-in{animation:slideUp .22s ease forwards}
+    input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+  </style>
+</head>
+<body>
+<div id="app"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+
+<script type="text/babel">
+const {useState, useMemo, useRef, useEffect} = React;
+
+const CATEGORIAS = [
+  {label:'🍔 Alimentação',value:'Alimentação',color:'#FF6B6B'},
+  {label:'🚗 Transporte',value:'Transporte',color:'#4ECDC4'},
+  {label:'🏠 Moradia',value:'Moradia',color:'#45B7D1'},
+  {label:'💊 Saúde',value:'Saúde',color:'#96CEB4'},
+  {label:'🎮 Lazer',value:'Lazer',color:'#FFEAA7'},
+  {label:'👗 Roupas',value:'Roupas',color:'#DDA0DD'},
+  {label:'📚 Educação',value:'Educação',color:'#98D8C8'},
+  {label:'📱 Tech',value:'Tech',color:'#F7DC6F'},
+  {label:'🛒 Mercado',value:'Mercado',color:'#82E0AA'},
+  {label:'✈️ Viagem',value:'Viagem',color:'#85C1E9'},
+  {label:'💡 Contas',value:'Contas',color:'#F0B27A'},
+  {label:'🎁 Outros',value:'Outros',color:'#BB8FCE'},
+];
+
+// Bancos fixos sempre presentes
+const BANCOS_FIXOS = [
+  {key:'nubank', nome:'Nubank', emoji:'💜', accent:'#B04BFF'},
+  {key:'sicoob', nome:'Sicoob', emoji:'🟢', accent:'#00A650'},
+];
+
+// 10 principais bancos do Brasil para sugestão em "Outros"
+const BANCOS_SUGESTAO = [
+  {nome:'Bradesco',   emoji:'🔴'},
+  {nome:'Itaú',      emoji:'🟠'},
+  {nome:'Santander', emoji:'🔴'},
+  {nome:'Caixa',     emoji:'🟡'},
+  {nome:'Banco do Brasil', emoji:'🟡'},
+  {nome:'Inter',     emoji:'🟠'},
+  {nome:'C6 Bank',   emoji:'⚫'},
+  {nome:'BTG',       emoji:'🔵'},
+  {nome:'Safra',     emoji:'🔵'},
+  {nome:'PicPay',    emoji:'🟢'},
+];
+
+const PAGAMENTOS_RAPIDOS = [
+  {label:'⚡ PIX', pagamento:'PIX', cartao:'', tipo:''},
+  {label:'💵 Dinheiro', pagamento:'Dinheiro', cartao:'', tipo:''},
+];
+
+const STEPS = ['nome','valor','pagamento','categoria'];
+const STEPS_RETRO = ['nome','valor','pagamento','categoria','data'];
+const INIT = {nome:'',valor:'',pagamento:'',cartao:'',tipo:'',categoria:''};
+const CAT_COLOR = Object.fromEntries(CATEGORIAS.map(c=>[c.value,c.color]));
+const PAY_COLORS = {PIX:'#4ECDC4',Dinheiro:'#82E0AA'};
+const CARD_COLORS = ['#FF6B6B','#FFA07A','#FFD700','#DA70D6','#87CEEB','#98FB98','#7B61FF','#4ECDC4'];
+
+function lsGet(k,def){try{const s=localStorage.getItem(k);return s?JSON.parse(s):def;}catch{return def;}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch{}}
+
+function fBRL(v){const n=parseFloat(v);return isNaN(n)?'R$ 0,00':n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});}
+function fDate(d){return new Date(d).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});}
+function nowISO(){const n=new Date();n.setMinutes(n.getMinutes()-n.getTimezoneOffset());return n.toISOString().slice(0,16);}
+
+function normNome(s){return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();}
+
+function matchBanco(input){
+  const n=normNome(input);
+  return BANCOS_SUGESTAO.find(b=>normNome(b.nome)===n||normNome(b.nome).includes(n)||n.includes(normNome(b.nome)));
+}
+
+// SVG Pie chart sem bibliotecas
+function PieChart({data, title, totalLabel}){
+  const size=240, cx=size/2, cy=size/2, r=88, ir=55;
+  const total=data.reduce((s,d)=>s+d.value,0);
+  if(!total) return null;
+  let angle=-Math.PI/2;
+  const slices=data.map(d=>{
+    const sweep=(d.value/total)*2*Math.PI;
+    const x1=cx+r*Math.cos(angle),y1=cy+r*Math.sin(angle);
+    const x2=cx+r*Math.cos(angle+sweep),y2=cy+r*Math.sin(angle+sweep);
+    const ix1=cx+ir*Math.cos(angle),iy1=cy+ir*Math.sin(angle);
+    const ix2=cx+ir*Math.cos(angle+sweep),iy2=cy+ir*Math.sin(angle+sweep);
+    const large=sweep>Math.PI?1:0;
+    const path='M'+ix1+','+iy1+' L'+x1+','+y1+' A'+r+','+r+',0,'+large+',1,'+x2+','+y2+' L'+ix2+','+iy2+' A'+ir+','+ir+',0,'+large+',0,'+ix1+','+iy1+' Z';
+    angle+=sweep;
+    return {...d,path};
+  });
+  return (
+    <div style={{background:'#1A1A26',border:'1px solid #2A2A3D',borderRadius:'16px',padding:'16px 12px',marginBottom:'12px'}}>
+      <div style={{textAlign:'center',marginBottom:'4px',color:'#888',fontSize:'11px',fontWeight:600,letterSpacing:'1px',textTransform:'uppercase'}}>{title}</div>
+      {totalLabel&&(
+        <div style={{textAlign:'center',marginBottom:'8px',fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:'20px',color:'#FF6B6B'}}>{totalLabel}</div>
+      )}
+      <svg width="100%" viewBox={'0 0 '+size+' '+size} style={{maxHeight:'220px',display:'block'}}>
+        {slices.map((s,i)=>(
+          <path key={i} d={s.path} fill={s.color} stroke="#0E0E14" strokeWidth="2"/>
+        ))}
+      </svg>
+      <div style={{display:'flex',flexDirection:'column',gap:'6px',marginTop:'8px'}}>
+        {[...data].sort((a,b)=>b.value-a.value).map(item=>(
+          <div key={item.name} style={{display:'flex',alignItems:'center',gap:'10px',padding:'8px 12px',background:'#12121C',borderRadius:'10px'}}>
+            <div style={{width:'8px',height:'8px',borderRadius:'50%',flexShrink:0,background:item.color}}/>
+            {item.emoji&&<span style={{fontSize:'13px'}}>{item.emoji}</span>}
+            <span style={{flex:1,fontSize:'13px'}}>{item.name}</span>
+            <span style={{color:'#666',fontSize:'11px'}}>{((item.value/total)*100).toFixed(1)}%</span>
+            <span style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:'13px',color:item.color}}>{fBRL(item.value)}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function MesCard({mes,labelMes}){
+  const [open,setOpen] = useState(false);
+  const catM = useMemo(()=>{
+    const m={};mes.txs.forEach(t=>{m[t.categoria]=(m[t.categoria]||0)+t.valor;});
+    return Object.entries(m).sort((a,b)=>b[1]-a[1]);
+  },[mes]);
+  return (
+    <div style={{background:'#141420',border:'1px solid #222235',borderRadius:'14px',overflow:'hidden'}}>
+      <button onClick={()=>setOpen(o=>!o)} style={{width:'100%',background:'none',border:'none',padding:'14px 16px',display:'flex',alignItems:'center',gap:'10px',cursor:'pointer',color:'#F0EDE8',fontFamily:'inherit'}}>
+        <span style={{fontSize:'16px'}}>🗓️</span>
+        <span style={{flex:1,textAlign:'left',fontWeight:600,fontSize:'14px',textTransform:'capitalize'}}>{labelMes(mes.key)}</span>
+        <span style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:'15px',color:'#FF6B6B'}}>{mes.total.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</span>
+        <span style={{color:'#555',fontSize:'12px',marginLeft:'6px'}}>{open?'▲':'▼'}</span>
+      </button>
+      {open&&(
+        <div style={{padding:'0 16px 14px',borderTop:'1px solid #1E1E2E'}}>
+          <div style={{color:'#555',fontSize:'11px',marginBottom:'8px',marginTop:'10px'}}>{mes.txs.length} lançamentos</div>
+          {catM.map(([cat,val])=>(
+            <div key={cat} style={{display:'flex',alignItems:'center',gap:'8px',padding:'6px 0',borderBottom:'1px solid #1A1A26'}}>
+              <span style={{fontSize:'14px'}}>{(CATEGORIAS.find(c=>c.value===cat)||{label:'🎁 x'}).label.split(' ')[0]}</span>
+              <span style={{flex:1,fontSize:'13px',color:'#B0ADCD'}}>{cat}</span>
+              <span style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:'13px',color:CAT_COLOR[cat]||'#7B61FF'}}>{val.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function App(){
+  const [txs,setTxs]           = useState(()=>lsGet('gastos_v1',[]));
+  // cartões extras além dos fixos: [{key, nome, emoji, accent}]
+  const [extCards,setExtCards] = useState(()=>lsGet('gastos_cards',[]));
+  // contagem de uso por cartao key
+  const [usageCount,setUsageCount] = useState(()=>lsGet('gastos_usage',{}));
+
+  const [step,setStep]     = useState(0);
+  const [form,setForm]     = useState(INIT);
+  const [view,setView]     = useState('add');
+  const [retro,setRetro]   = useState(false);
+  const [val,setVal]       = useState('');
+  const dateRef            = useRef();
+
+  // sub-estados para fluxo de pagamento
+  const [payStage,setPayStage]   = useState('main'); // 'main' | 'outros_banco' | 'outros_tipo' | 'tipo_fixo'
+  const [tempCard,setTempCard]   = useState(null);   // {key,nome,emoji,accent} aguardando tipo
+  const [outrosInput,setOutrosInput] = useState('');
+  const [showRemover,setShowRemover] = useState(false);
+
+  const [showBackup,setShowBackup] = useState(false);
+  const [importText,setImportText] = useState('');
+  const [importMsg,setImportMsg]   = useState('');
+
+  const steps = retro?STEPS_RETRO:STEPS;
+  const cur   = steps[step];
+
+  const persist = txs2=>{lsSet('gastos_v1',txs2);setTxs(txs2);};
+
+  const reset = (r=false)=>{
+    setForm(INIT);setStep(0);setVal('');setRetro(r);
+    setPayStage('main');setTempCard(null);setOutrosInput('');setShowRemover(false);
+  };
+
+  // Exportar: gera JSON com todos os dados
+  const handleExport = ()=>{
+    const dados={txs,extCards,usageCount};
+    const json=JSON.stringify(dados);
+    // Tenta usar Web Share API (nativo do iPhone)
+    if(navigator.share){
+      navigator.share({title:'Backup Gastos',text:json}).catch(()=>{});
+    } else {
+      // Fallback: copia para área de transferência
+      navigator.clipboard&&navigator.clipboard.writeText(json).then(()=>alert('Dados copiados! Cole no novo celular.'));
+    }
+  };
+
+  // Importar: lê o JSON e restaura
+  const handleImport = ()=>{
+    try{
+      const dados=JSON.parse(importText.trim());
+      if(!dados.txs||!Array.isArray(dados.txs)) throw new Error();
+      lsSet('gastos_v1',dados.txs); setTxs(dados.txs);
+      if(dados.extCards){lsSet('gastos_cards',dados.extCards);setExtCards(dados.extCards);}
+      if(dados.usageCount){lsSet('gastos_usage',dados.usageCount);setUsageCount(dados.usageCount);}
+      setImportMsg('✅ Dados importados com sucesso!');
+      setImportText('');
+      setTimeout(()=>{setImportMsg('');setShowBackup(false);},2000);
+    }catch{
+      setImportMsg('❌ Dados inválidos. Verifique o texto colado.');
+    }
+  };
+
+  // Incrementa uso de um cartão
+  const incUsage = key=>{
+    const u={...usageCount,[key]:(usageCount[key]||0)+1};
+    lsSet('gastos_usage',u);setUsageCount(u);
+  };
+
+  // Finaliza pagamento: recebe {pagamento, cartao, tipo, accent}
+  const finalizePay = (pagamento,cartao,tipo)=>{
+    setForm(p=>({...p,pagamento,cartao,tipo}));
+    if(cartao) incUsage(cartao.toLowerCase().replace(/\s/g,'_'));
+    setPayStage('main');
+    setStep(step+1);
+  };
+
+  const next = (field,value)=>{
+    const u={...form,[field]:value};
+    setForm(u);
+    if(step<steps.length-1){setStep(step+1);return;}
+    const n={id:Date.now(),...u,valor:parseFloat(u.valor),date:Date.now()};
+    persist([n,...txs]);reset();setView('list');
+  };
+
+  const pickCat = cat=>{
+    if(retro){setForm(p=>({...p,categoria:cat}));setStep(step+1);return;}
+    const n={id:Date.now(),...form,categoria:cat,valor:parseFloat(form.valor),date:Date.now()};
+    persist([n,...txs]);reset();setView('list');
+  };
+
+  const saveRetro = ()=>{
+    const ds=dateRef.current&&dateRef.current.value;
+    const n={id:Date.now(),...form,valor:parseFloat(form.valor),date:ds?new Date(ds).getTime():Date.now(),retro:true};
+    persist([...txs,n].sort((a,b)=>b.date-a.date));reset();setView('list');
+  };
+
+  const del = id=>persist(txs.filter(t=>t.id!==id));
+
+  // Remove cartão extra
+  const removeCard = key=>{
+    const c=extCards.filter(c=>c.key!==key);
+    lsSet('gastos_cards',c);setExtCards(c);
+  };
+
+  const total = useMemo(()=>txs.reduce((s,t)=>s+t.valor,0),[txs]);
+
+  const mesAtual = useMemo(()=>{const n=new Date();return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');},[]);
+  const txsMes = useMemo(()=>txs.filter(t=>{const d=new Date(t.date);const m=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');return m===mesAtual;}),[txs,mesAtual]);
+  const txsArq = useMemo(()=>txs.filter(t=>{const d=new Date(t.date);const m=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');return m!==mesAtual;}),[txs,mesAtual]);
+  const mesesAnteriores = useMemo(()=>{
+    const m={};
+    txsArq.forEach(t=>{
+      const d=new Date(t.date);
+      const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+      if(!m[key])m[key]={key,txs:[],total:0};
+      m[key].txs.push(t);m[key].total+=t.valor;
+    });
+    return Object.values(m).sort((a,b)=>b.key.localeCompare(a.key));
+  },[txsArq]);
+  const totalMes = useMemo(()=>txsMes.reduce((s,t)=>s+t.valor,0),[txsMes]);
+  const labelMes = key=>{const [y,m]=key.split('-');return new Date(y,m-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});};
+
+  // Todos os cartões disponíveis: fixos + extras, ordenados por uso
+  const allCards = useMemo(()=>{
+    const all=[...BANCOS_FIXOS,...extCards];
+    return all.sort((a,b)=>(usageCount[b.key]||0)-(usageCount[a.key]||0));
+  },[extCards,usageCount]);
+
+  const catData = useMemo(()=>{
+    const m={};txsMes.forEach(t=>{m[t.categoria]=(m[t.categoria]||0)+t.valor;});
+    return Object.entries(m).map(([name,value])=>({name,value,color:CAT_COLOR[name]||'#7B61FF'}));
+  },[txsMes]);
+
+  const payData = useMemo(()=>{
+    const m={};
+    txsMes.forEach(t=>{
+      let k;
+      if(!t.cartao) k=t.pagamento;
+      else k=(t.tipo||t.pagamento)+' · '+t.cartao;
+      m[k]=(m[k]||0)+t.valor;
+    });
+    let ci=0;const idx={};
+    return Object.entries(m).map(([name,value])=>{
+      const base=name.split(' · ')[0];
+      const emoji=base==='PIX'?'⚡':base==='Dinheiro'?'💵':base==='Crédito'?'💳':'🏦';
+      const color=name.indexOf('·')===-1?(PAY_COLORS[base]||'#BB8FCE'):CARD_COLORS[((idx[name]===undefined?(idx[name]=ci++):idx[name]))%CARD_COLORS.length];
+      return{name,value,color,emoji};
+    });
+  },[txsMes]);
+
+  // ── Adicionar banco "Outros" ──
+  const handleOutrosConfirm = ()=>{
+    const input=outrosInput.trim();
+    if(!input) return;
+    const match=matchBanco(input);
+    const nome=match?match.nome:input;
+    const emoji=match?match.emoji:'🏦';
+    const key=nome.toLowerCase().replace(/\s/g,'_');
+    const accent='#7B61FF';
+    const exists=[...BANCOS_FIXOS,...extCards].find(c=>c.key===key);
+    let card={key,nome,emoji,accent};
+    if(!exists){
+      const updated=[...extCards,card];
+      lsSet('gastos_cards',updated);setExtCards(updated);
+    }
+    setTempCard(card);
+    setPayStage('outros_tipo');
+  };
+
+  // ── Render ──
+  const accentOf = c=>c.accent||'#7B61FF';
+
+  return (
+    <div style={{minHeight:'100dvh',background:'#0E0E14',display:'flex',flexDirection:'column'}}>
+
+      {/* Header */}
+      <div style={{padding:'24px 20px 12px',background:'#0E0E14'}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+          <div>
+            <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:'22px',fontWeight:700}}>💸 Gastos</div>
+            <div style={{color:'#666',fontSize:'13px',marginTop:'2px'}}>{new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'})}</div>
+          </div>
+          <div style={{background:'#1A1A26',border:'1px solid #2A2A3D',borderRadius:'12px',padding:'10px 16px',textAlign:'right'}}>
+            <div style={{color:'#888',fontSize:'11px',fontWeight:600,textTransform:'uppercase'}}>Este mês</div>
+            <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:'18px',fontWeight:700,color:'#FF6B6B'}}>{fBRL(totalMes)}</div>
+            <div style={{color:'#555',fontSize:'11px',marginTop:'2px'}}>total: {fBRL(total)}</div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{flex:1,overflowY:'auto',padding:'8px 20px 110px'}}>
+
+        {/* ── ADD ── */}
+        {view==='add'&&(
+          <div className="animate-in">
+            {retro&&(
+              <div style={{background:'#1A1020',border:'1px solid #5B2D8E',borderRadius:'12px',padding:'10px 14px',marginBottom:'16px',marginTop:'8px',display:'flex',alignItems:'center',gap:'8px'}}>
+                <span>🕐</span>
+                <div>
+                  <div style={{fontSize:'12px',fontWeight:700,color:'#C084FC'}}>Gasto esquecido</div>
+                  <div style={{fontSize:'11px',color:'#7A5A9A'}}>Você definirá a data no final</div>
+                </div>
+                <button onClick={()=>reset(false)} style={{marginLeft:'auto',background:'none',border:'none',color:'#5B2D8E',cursor:'pointer',fontSize:'18px'}}>✕</button>
+              </div>
+            )}
+            <div style={{display:'flex',gap:'6px',marginBottom:'24px',marginTop:retro?'0':'8px'}}>
+              {steps.map((s,i)=>(
+                <div key={s} style={{flex:1,height:'3px',borderRadius:'3px',background:i<step?(retro?'#C084FC':'#7B61FF'):i===step?(retro?'#E9A8FF':'#B09EFF'):'#2A2A3D'}}/>
+              ))}
+            </div>
+
+            {/* NOME */}
+            {cur==='nome'&&(
+              <div className="animate-in">
+                <div style={{color:'#888',fontSize:'12px',fontWeight:600,letterSpacing:'1px',textTransform:'uppercase',marginBottom:'8px'}}>Nome da despesa</div>
+                <input className="input-field" placeholder="Ex: Almoço no restaurante..." value={val} onChange={e=>setVal(e.target.value)}
+                  onKeyDown={e=>{if(e.key==='Enter'&&val.trim())next('nome',val.trim());}} style={{marginBottom:'16px'}}/>
+                <div style={{display:'flex',flexWrap:'wrap',gap:'8px',marginBottom:'20px'}}>
+                  {['Almoço','Café','Supermercado','Farmácia','Uber','iFood','Academia','Gasolina'].map(s=>(
+                    <button key={s} className="quick-tag" onClick={()=>{setVal(s);next('nome',s);}}>{s}</button>
+                  ))}
+                </div>
+                <button className="submit-btn" disabled={!val.trim()} onClick={()=>next('nome',val.trim())}>Continuar →</button>
+                {!retro&&(
+                  <button onClick={()=>reset(true)} style={{marginTop:'14px',width:'100%',background:'none',border:'1.5px dashed #2A2A3D',color:'#5A5A7A',borderRadius:'14px',padding:'13px',cursor:'pointer',fontSize:'13px',fontFamily:'inherit',fontWeight:500,display:'flex',alignItems:'center',justifyContent:'center',gap:'7px'}}>
+                    🕐 Adicionar gasto esquecido
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* VALOR */}
+            {cur==='valor'&&(
+              <div className="animate-in">
+                <div style={{color:'#888',fontSize:'12px',fontWeight:600,letterSpacing:'1px',textTransform:'uppercase',marginBottom:'8px'}}>Valor</div>
+                <div style={{color:'#F0EDE8',fontSize:'14px',marginBottom:'16px'}}>📌 {form.nome}</div>
+                <div style={{position:'relative',marginBottom:'16px'}}>
+                  <span style={{position:'absolute',left:'18px',top:'50%',transform:'translateY(-50%)',color:'#7B61FF',fontWeight:700,fontSize:'18px',fontFamily:"'Space Grotesk',sans-serif"}}>R$</span>
+                  <input className="input-field" type="number" step="0.01" min="0" placeholder="0,00" value={val} onChange={e=>setVal(e.target.value)}
+                    onKeyDown={e=>{if(e.key==='Enter'&&parseFloat(val)>0)next('valor',val);}}
+                    style={{paddingLeft:'52px',fontSize:'24px',fontFamily:"'Space Grotesk',sans-serif"}}/>
+                </div>
+                <div style={{display:'flex',flexWrap:'wrap',gap:'8px',marginBottom:'20px'}}>
+                  {[10,20,30,50,100,150,200,500].map(v=>(
+                    <button key={v} className="quick-val" onClick={()=>{setVal(String(v));next('valor',String(v));}}>R${v}</button>
+                  ))}
+                </div>
+                <button className="submit-btn" disabled={!(parseFloat(val)>0)} onClick={()=>next('valor',val)}>Continuar →</button>
+              </div>
+            )}
+
+            {/* PAGAMENTO */}
+            {cur==='pagamento'&&(
+              <div className="animate-in">
+                <div style={{color:'#888',fontSize:'12px',fontWeight:600,letterSpacing:'1px',textTransform:'uppercase',marginBottom:'8px'}}>
+                  {payStage==='main'?'Forma de pagamento':payStage==='outros_banco'?'Qual banco?':payStage==='outros_tipo'||payStage==='tipo_fixo'?'Crédito ou Débito?':''}
+                </div>
+                <div style={{color:'#F0EDE8',fontSize:'14px',marginBottom:'20px'}}>
+                  📌 {form.nome} · <span style={{color:'#7B61FF',fontFamily:"'Space Grotesk',sans-serif",fontWeight:700}}>{fBRL(form.valor)}</span>
+                </div>
+
+                {/* MAIN: lista de cartões + pix/dinheiro */}
+                {payStage==='main'&&(
+                  <div>
+                    <div style={{display:'flex',flexDirection:'column',gap:'10px'}}>
+                      {allCards.map(c=>(
+                        <button key={c.key} className="btn-chip" onClick={()=>{setTempCard(c);setPayStage('tipo_fixo');}}
+                          style={{borderColor:'#2A2A3D',position:'relative'}}
+                          onMouseEnter={e=>{e.currentTarget.style.borderColor=accentOf(c);e.currentTarget.style.background=accentOf(c)+'18';}}
+                          onMouseLeave={e=>{e.currentTarget.style.borderColor='#2A2A3D';e.currentTarget.style.background='#1A1A26';}}>
+                          <span style={{fontSize:'20px'}}>{c.emoji}</span>
+                          <div style={{display:'flex',flexDirection:'column',flex:1}}>
+                            <span style={{fontSize:'15px',fontWeight:600}}>{c.nome}</span>
+                            <span style={{fontSize:'11px',color:accentOf(c)}}>
+                              {usageCount[c.key]?usageCount[c.key]+' uso'+(usageCount[c.key]>1?'s':''):''}
+                            </span>
+                          </div>
+                          {showRemover&&!BANCOS_FIXOS.find(f=>f.key===c.key)&&(
+                            <button onClick={e=>{e.stopPropagation();removeCard(c.key);}}
+                              style={{background:'#3A1A1A',border:'none',color:'#FF6B6B',borderRadius:'8px',padding:'4px 8px',cursor:'pointer',fontSize:'12px',fontWeight:600}}>
+                              remover
+                            </button>
+                          )}
+                        </button>
+                      ))}
+
+                      {/* PIX e Dinheiro */}
+                      {PAGAMENTOS_RAPIDOS.map(op=>(
+                        <button key={op.label} className="btn-chip" onClick={()=>finalizePay(op.pagamento,'','')}
+                          style={{borderColor:'#2A2A3D'}}
+                          onMouseEnter={e=>{e.currentTarget.style.borderColor='#4ECDC4';e.currentTarget.style.background='#4ECDC418';}}
+                          onMouseLeave={e=>{e.currentTarget.style.borderColor='#2A2A3D';e.currentTarget.style.background='#1A1A26';}}>
+                          <span style={{fontSize:'20px'}}>{op.label.split(' ')[0]}</span>
+                          <span style={{fontSize:'15px',fontWeight:600}}>{op.label.split(' ').slice(1).join(' ')}</span>
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Rodapé: Outros + Remover */}
+                    <div style={{display:'flex',gap:'10px',marginTop:'14px'}}>
+                      <button onClick={()=>setPayStage('outros_banco')}
+                        style={{flex:1,background:'none',border:'1.5px dashed #2A2A3D',color:'#5A5A7A',borderRadius:'14px',padding:'11px',cursor:'pointer',fontSize:'13px',fontFamily:'inherit',fontWeight:500,display:'flex',alignItems:'center',justifyContent:'center',gap:'6px'}}>
+                        🏦 Outros bancos
+                      </button>
+                      {extCards.length>0&&(
+                        <button onClick={()=>setShowRemover(r=>!r)}
+                          style={{background:'none',border:'1.5px dashed '+(showRemover?'#FF6B6B':'#2A2A3D'),color:showRemover?'#FF6B6B':'#5A5A7A',borderRadius:'14px',padding:'11px 14px',cursor:'pointer',fontSize:'13px',fontFamily:'inherit',fontWeight:500}}>
+                          {showRemover?'✓ Pronto':'🗑️'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* OUTROS: digitar banco */}
+                {payStage==='outros_banco'&&(
+                  <div className="animate-in">
+                    <input className="input-field" placeholder="Nome do banco..." value={outrosInput} onChange={e=>setOutrosInput(e.target.value)}
+                      onKeyDown={e=>{if(e.key==='Enter'&&outrosInput.trim())handleOutrosConfirm();}}
+                      style={{marginBottom:'14px'}} autoFocus/>
+                    <div style={{display:'flex',flexWrap:'wrap',gap:'8px',marginBottom:'20px'}}>
+                      {BANCOS_SUGESTAO.map(b=>(
+                        <button key={b.nome} className="quick-tag" onClick={()=>{setOutrosInput(b.nome);}}
+                          style={{display:'flex',alignItems:'center',gap:'5px'}}>
+                          <span>{b.emoji}</span><span>{b.nome}</span>
+                        </button>
+                      ))}
+                    </div>
+                    <button className="submit-btn" disabled={!outrosInput.trim()} onClick={handleOutrosConfirm}>Confirmar →</button>
+                    <button onClick={()=>setPayStage('main')} style={{marginTop:'12px',background:'none',border:'none',color:'#555',cursor:'pointer',fontSize:'13px',fontFamily:'inherit',padding:'8px 0',display:'flex',alignItems:'center',gap:'5px'}}>← Voltar</button>
+                  </div>
+                )}
+
+                {/* TIPO: crédito ou débito (após escolher banco, fixo ou outro) */}
+                {(payStage==='tipo_fixo'||payStage==='outros_tipo')&&tempCard&&(
+                  <div className="animate-in">
+                    <div style={{display:'flex',alignItems:'center',gap:'10px',padding:'12px 16px',background:'#1A1A26',border:'1px solid #2A2A3D',borderRadius:'12px',marginBottom:'20px'}}>
+                      <span style={{fontSize:'22px'}}>{tempCard.emoji}</span>
+                      <span style={{fontWeight:600,fontSize:'16px'}}>{tempCard.nome}</span>
+                    </div>
+                    <div style={{display:'flex',gap:'12px'}}>
+                      <button className="tipo-btn" onClick={()=>finalizePay('Crédito',tempCard.nome,'Crédito')}
+                        onMouseEnter={e=>{e.currentTarget.style.borderColor='#7B61FF';e.currentTarget.style.background='#7B61FF18';}}
+                        onMouseLeave={e=>{e.currentTarget.style.borderColor='#2A2A3D';e.currentTarget.style.background='#1A1A26';}}>
+                        <span style={{fontSize:'26px'}}>💳</span>
+                        <span style={{fontWeight:700}}>Crédito</span>
+                      </button>
+                      <button className="tipo-btn" onClick={()=>finalizePay('Débito',tempCard.nome,'Débito')}
+                        onMouseEnter={e=>{e.currentTarget.style.borderColor='#F7DC6F';e.currentTarget.style.background='#F7DC6F18';}}
+                        onMouseLeave={e=>{e.currentTarget.style.borderColor='#2A2A3D';e.currentTarget.style.background='#1A1A26';}}>
+                        <span style={{fontSize:'26px'}}>🏦</span>
+                        <span style={{fontWeight:700}}>Débito</span>
+                      </button>
+                    </div>
+                    <button onClick={()=>setPayStage('main')} style={{marginTop:'16px',background:'none',border:'none',color:'#555',cursor:'pointer',fontSize:'13px',fontFamily:'inherit',padding:'8px 0',display:'flex',alignItems:'center',gap:'5px'}}>← Voltar</button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* CATEGORIA */}
+            {cur==='categoria'&&(
+              <div className="animate-in">
+                <div style={{color:'#888',fontSize:'12px',fontWeight:600,letterSpacing:'1px',textTransform:'uppercase',marginBottom:'8px'}}>Categoria</div>
+                <div style={{color:'#F0EDE8',fontSize:'14px',marginBottom:'20px'}}>📌 {form.nome} · <span style={{color:'#7B61FF',fontFamily:"'Space Grotesk',sans-serif",fontWeight:700}}>{fBRL(form.valor)}</span></div>
+                <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'10px'}}>
+                  {CATEGORIAS.map(c=>(
+                    <button key={c.value} className="btn-cat" onClick={()=>pickCat(c.value)}>
+                      <span style={{fontSize:'22px'}}>{c.label.split(' ')[0]}</span>
+                      <span style={{fontSize:'11px',color:'#B0ADCD'}}>{c.label.split(' ').slice(1).join(' ')}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* DATA RETRO */}
+            {cur==='data'&&(
+              <div className="animate-in">
+                <div style={{color:'#C084FC',fontSize:'12px',fontWeight:600,letterSpacing:'1px',textTransform:'uppercase',marginBottom:'8px'}}>Quando foi esse gasto?</div>
+                <div style={{color:'#F0EDE8',fontSize:'14px',marginBottom:'20px'}}>📌 {form.nome} · <span style={{color:'#C084FC',fontFamily:"'Space Grotesk',sans-serif",fontWeight:700}}>{fBRL(form.valor)}</span></div>
+                <input ref={dateRef} type="datetime-local" className="input-field" defaultValue={nowISO()} max={nowISO()} style={{fontSize:'16px',marginBottom:'12px',colorScheme:'dark'}}/>
+                <div style={{display:'flex',flexWrap:'wrap',gap:'8px',marginBottom:'20px'}}>
+                  {[{label:'Ontem',o:1},{label:'2 dias atrás',o:2},{label:'3 dias atrás',o:3},{label:'1 semana',o:7}].map(({label,o})=>(
+                    <button key={label} className="quick-tag" style={{color:'#C084FC',borderColor:'#3D1F66',background:'#1A1020'}}
+                      onClick={()=>{const d=new Date();d.setDate(d.getDate()-o);d.setMinutes(d.getMinutes()-d.getTimezoneOffset());if(dateRef.current)dateRef.current.value=d.toISOString().slice(0,16);}}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <button className="submit-btn" style={{background:'linear-gradient(135deg,#8B3FD9,#5B2D8E)'}} onClick={saveRetro}>✅ Salvar gasto</button>
+              </div>
+            )}
+
+            {step>0&&cur!=='pagamento'&&(
+              <button onClick={()=>{setStep(s=>Math.max(0,s-1));setVal('');}} style={{marginTop:'16px',background:'none',border:'none',color:'#555',cursor:'pointer',fontSize:'13px',fontFamily:'inherit',padding:'8px 0',display:'flex',alignItems:'center',gap:'5px'}}>← Voltar</button>
+            )}
+          </div>
+        )}
+
+        {/* ── LIST ── */}
+        {view==='list'&&(
+          <div className="animate-in">
+            <div style={{marginBottom:'16px',marginTop:'8px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+              <span style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:'18px'}}>Transações</span>
+              <span style={{color:'#666',fontSize:'13px'}}>{txs.length} lançamentos</span>
+            </div>
+            {txs.length===0&&(
+              <div style={{textAlign:'center',color:'#555',padding:'60px 20px'}}>
+                <div style={{fontSize:'40px',marginBottom:'12px'}}>🧾</div>
+                <div>Nenhum gasto ainda</div>
+              </div>
+            )}
+            <div style={{display:'flex',flexDirection:'column',gap:'10px'}}>
+              {txs.map(t=>(
+                <div key={t.id} className="tx-card">
+                  <div style={{width:'42px',height:'42px',borderRadius:'12px',flexShrink:0,background:(CAT_COLOR[t.categoria]||'#7B61FF')+'22',border:'1.5px solid '+(CAT_COLOR[t.categoria]||'#7B61FF')+'44',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'20px'}}>
+                    {(CATEGORIAS.find(c=>c.value===t.categoria)||{label:'💸 x'}).label.split(' ')[0]}
+                  </div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontWeight:600,fontSize:'15px',marginBottom:'4px',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{t.nome}</div>
+                    <div style={{display:'flex',gap:'6px',flexWrap:'wrap'}}>
+                      <span className="pill" style={{background:(CAT_COLOR[t.categoria]||'#7B61FF')+'25',color:CAT_COLOR[t.categoria]||'#7B61FF'}}>{t.categoria}</span>
+                      <span className="pill" style={{background:'#2A2A3D',color:'#888'}}>{t.tipo||t.pagamento}{t.cartao?' · '+t.cartao:''}</span>
+                      {t.retro&&<span className="pill" style={{background:'#1A1020',color:'#C084FC',border:'1px solid #3D1F66'}}>🕐 retroativo</span>}
+                    </div>
+                    <div style={{color:'#555',fontSize:'11px',marginTop:'4px'}}>{fDate(t.date)}</div>
+                  </div>
+                  <div style={{textAlign:'right',flexShrink:0,display:'flex',flexDirection:'column',alignItems:'flex-end',gap:'6px'}}>
+                    <span style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:'16px',color:'#FF6B6B'}}>{fBRL(t.valor)}</span>
+                    <button className="delete-btn" onClick={()=>del(t.id)}>✕</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── CHART ── */}
+        {view==='chart'&&(
+          <div className="animate-in">
+            <div style={{marginBottom:'16px',marginTop:'8px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+              <span style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:'18px'}}>Resumo</span>
+              <span style={{background:'#1A1A26',border:'1px solid #2A2A3D',borderRadius:'10px',padding:'6px 12px',fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:'15px',color:'#FF6B6B'}}>{fBRL(totalMes)}</span>
+            </div>
+            <div style={{color:'#888',fontSize:'11px',fontWeight:600,letterSpacing:'1px',textTransform:'uppercase',marginBottom:'10px'}}>
+              📅 {new Date().toLocaleDateString('pt-BR',{month:'long',year:'numeric'})}
+            </div>
+            {catData.length===0?(
+              <div style={{textAlign:'center',color:'#555',padding:'40px 20px'}}>
+                <div style={{fontSize:'40px',marginBottom:'12px'}}>📊</div>
+                <div>Sem gastos neste mês</div>
+              </div>
+            ):(
+              <div>
+                <PieChart data={catData} title="Por Categoria"/>
+                <PieChart data={payData} title="Por Forma de Pagamento" totalLabel={fBRL(totalMes)}/>
+              </div>
+            )}
+            {mesesAnteriores.length>0&&(
+              <div style={{marginTop:'24px'}}>
+                <div style={{color:'#555',fontSize:'11px',fontWeight:600,letterSpacing:'1px',textTransform:'uppercase',marginBottom:'10px'}}>Meses anteriores</div>
+                <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
+                  {mesesAnteriores.map(mes=>(
+                    <MesCard key={mes.key} mes={mes} labelMes={labelMes}/>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Modal Backup */}
+      {showBackup&&(
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.7)',zIndex:200,display:'flex',alignItems:'flex-end'}} onClick={()=>setShowBackup(false)}>
+          <div style={{background:'#1A1A26',borderRadius:'20px 20px 0 0',padding:'24px 20px 40px',width:'100%'}} onClick={e=>e.stopPropagation()}>
+            <div style={{width:'40px',height:'4px',background:'#333',borderRadius:'2px',margin:'0 auto 20px'}}/>
+            <div style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:'18px',marginBottom:'6px'}}>📦 Backup de Dados</div>
+            <div style={{color:'#666',fontSize:'13px',marginBottom:'20px'}}>Exporte seus gastos para transferir para outro celular</div>
+
+            <button onClick={handleExport} style={{width:'100%',background:'linear-gradient(135deg,#7B61FF,#5B41DF)',border:'none',borderRadius:'14px',padding:'15px',color:'white',fontFamily:'inherit',fontSize:'15px',fontWeight:600,cursor:'pointer',marginBottom:'16px',display:'flex',alignItems:'center',justifyContent:'center',gap:'8px'}}>
+              📤 Exportar / Compartilhar dados
+            </button>
+
+            <div style={{color:'#888',fontSize:'12px',marginBottom:'8px',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.5px'}}>Importar no novo celular</div>
+            <textarea
+              placeholder="Cole aqui o texto exportado do celular antigo..."
+              value={importText}
+              onChange={e=>setImportText(e.target.value)}
+              style={{width:'100%',background:'#12121C',border:'1.5px solid #2A2A3D',borderRadius:'12px',padding:'14px',color:'#F0EDE8',fontFamily:'inherit',fontSize:'13px',outline:'none',resize:'none',height:'100px',marginBottom:'10px'}}
+            />
+            {importMsg&&<div style={{fontSize:'13px',marginBottom:'10px',color:importMsg.startsWith('✅')?'#82E0AA':'#FF6B6B'}}>{importMsg}</div>}
+            <button onClick={handleImport} disabled={!importText.trim()} style={{width:'100%',background:importText.trim()?'#1E3A2F':'#1A1A26',border:'1.5px solid '+(importText.trim()?'#82E0AA':'#2A2A3D'),borderRadius:'14px',padding:'14px',color:importText.trim()?'#82E0AA':'#555',fontFamily:'inherit',fontSize:'15px',fontWeight:600,cursor:'pointer'}}>
+              📥 Importar dados
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Nav */}
+      <div style={{position:'fixed',bottom:0,left:0,right:0,background:'#0E0E14',borderTop:'1px solid #1E1E2E',padding:'8px 20px 20px',display:'flex',justifyContent:'space-around',alignItems:'center',zIndex:100}}>
+        <button className={'nav-btn'+(view==='list'?' active':'')} onClick={()=>setView('list')}>
+          <span style={{fontSize:'20px'}}>🧾</span><span>Lista</span>
+        </button>
+        <button onClick={()=>{reset();setView('add');}} style={{width:'56px',height:'56px',borderRadius:'18px',background:'linear-gradient(135deg,#7B61FF,#5B41DF)',border:'none',cursor:'pointer',fontSize:'28px',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 20px #7B61FF50'}}>+</button>
+        <button className={'nav-btn'+(view==='chart'?' active':'')} onClick={()=>setView('chart')}>
+          <span style={{fontSize:'20px'}}>📊</span><span>Resumo</span>
+        </button>
+        <button className="nav-btn" onClick={()=>setShowBackup(true)}>
+          <span style={{fontSize:'20px'}}>⚙️</span><span>Dados</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('app')).render(React.createElement(App));
+</script>
+
+</body>
+</html>
